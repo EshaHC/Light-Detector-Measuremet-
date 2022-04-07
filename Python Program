@@ -1,0 +1,144 @@
+# sample program code 
+# Author: Esha Hourihane Clancy
+# Date: 22/03/2022
+
+# Declare Variables and Assign to pins on the Microcontroller
+
+# Power and Ground
+# gnd will be connected to the ground pin on the mocrocontroller, not logic 0
+vcc = 3.3 
+gnd = 0  
+
+# PD and UV signals 
+PD = 8
+UV = 2
+
+# Switch Signal 
+Switch = 0
+
+
+
+# Function that cycles through every arm by incrementing the select of the demux
+def measure_arms (i):
+    
+  # Read in data from c code here
+    
+    # arrays of measurement data
+    PDs = [arm1[0], arm2[0], arm3[0], arm4[0], arm5[0], arm6[0], arm7[0], arm8[0]]
+    UVs = [arm1[1], arm2[1], arm3[1], arm4[1], arm5[1], arm6[1], arm7[1], arm8[1]]
+    Switches = [arm1[2], arm2[2], arm3[2], arm4[2], arm5[2], arm6[2], arm7[2], arm8[2]]
+
+    return PDs, UVs, Switches
+   
+
+def two_D_measure(Height):
+
+    PD_Data = []
+    UV_Data = []
+    Switch_Data = []
+    
+    # check the measerment on every arm at every position 
+    for i in range(0, 8): 
+         PD = measure_arms(i)[0]
+         UV = measure_arms(i)[1]
+         Switch = measure_arms(i)[2]
+         # add all the data for every position into long arrays
+         PD_Data = np.concatenate((PD_Data, PD))
+         UV_Data = np.concatenate((UV_Data, UV))
+         Switch_Data = np.concatenate((Switch_Data, Switch))
+         
+         #input("Press enter when the arms have been moved to their next potition")
+   
+    # Create a matrix where the rows are the positions from 1 to 10 and the columns are the arrms from 1 to 8 
+    PD_matrix = np.reshape(PD_Data, (8,8))
+    UV_matrix = np.reshape(UV_Data, (8,8))
+    Switch_Matrix = np.reshape(Switch_Data, (8,8))
+
+    # Adjust the arrays so the data represents the positions the arms were in according to the switches
+    PD_adjusted = switch_adjust(PD_matrix, Switch_Matrix)
+    UV_adjusted = switch_adjust(UV_matrix, Switch_Matrix)
+    heatmap(PD_adjusted, 0)
+    heatmap(UV_adjusted, 1)
+    return PD_adjusted, UV_adjusted
+  
+# Function to plot the 2D heatmaps for distribution of UV and PD light  
+def heatmap(input, no):
+    map = sns.heatmap(input, annot=True)
+    plt.xlabel('Position', fontsize= 16 )
+    plt.ylabel('Arms', fontsize= 16)
+    if (no == 0):
+        plt.title('Photodiode Voltage (V)', fontsize= 16)
+    else:
+        plt.title('UV Voltage (V)', fontsize= 16)
+    plt.show()
+
+
+def switch_adjust(matrix, switch_matrix):
+
+    rows = 8
+    cols = 8
+    
+
+    # Transpose so that each arm is a row with the positions as the columns 
+    Tmatrix = matrix.transpose()
+    Tswitch_matrix = switch_matrix.transpose()
+    final_positions = []
+    count = 0 
+    
+    # Test matrices to check if the function works 
+    Test_matrix_a = [[ 3,3,2.5,2,2,1.8,1,1],[ 3,3,2.5,2,2,1.8,1,1],[ 3,3,2.5,2,2,1.8,1,1],[ 3,3,2.5,2,2,1.8,1,1],\
+        [ 3,3,2.5,2,2,1.8,1,1,],[ 3,3,2.5,2,2,1.8,1,1],[ 3,3,2.5,2,2,1.8,1,1],[ 3,3,2.5,2,2,1.8,1,1],]
+    Test_matrix = [[ 0,0,0,0,0,0,0,1],[ 0,0,0,0,0,1,1,1],[ 0,0,0,0,0,1,1,1],[ 0,0,0,0,1,1,1,1],\
+        [0,0,0,1,1,1,1,1],[ 0,0,0,0,0,0,1,1],[ 0,0,0,0,0,0,0,1],[ 0,0,0,0,0,0,0,1]]
+    
+    # Output matrix with adjusted positions  
+    D_adjusted = [[9]*cols]*rows
+
+    # If the switch has not been hit, increment the count 
+    # If the arm started in position 1, the fianl count will be 7
+    for row in range(0,rows):
+        for col in range(0,cols):
+            if (Test_matrix[row][col] == 0):
+                count +=1
+        final_positions.append(count)
+        count = 0
+    
+
+    for index in range(len(final_positions)):
+        arm = final_positions[index]
+        
+        # If the final count was 7, do not adjust the position of the data
+        if (arm == 7):       
+            D_adjusted[index] = Test_matrix_a[index]    
+
+        # If the final count was not 7, then the arm hit the switch in < 7 measurements 
+        # Find the difference between 7 and the measurement at which the arm hit the switch
+        elif (arm != 7):
+            pad = 7 - arm
+            # Pad the measurements to shift the data according to the position of the arms 
+            new_array_start = D_adjusted[index][0:pad]
+            new_array_end = Test_matrix_a[index][0:-pad]
+            new_list = new_array_start + new_array_end
+
+            D_adjusted[index] = new_list
+           
+    return D_adjusted
+                           
+
+def next_height():
+    # User inputs the height of the arms on the frame 
+    Height = (input("Please input which height the arms are, where level 1 is the bottom and level 10 is the top:"))
+    input("Manually place all the arms around the plant, as close to the plant as possible wihtout touching it. \n \
+    Press enter when you are ready to take the first measurement.")
+    PDadj = two_D_measure(Height)[0]
+    UVadj = two_D_measure(Height)[1]
+    return PDadj, UVadj
+
+next_height()
+l2 = next_height()
+l3 = next_height()
+l4 = next_height()
+l5 = next_height()
+l6 = next_height()
+l7 = next_height()
+l8 = next_height()
