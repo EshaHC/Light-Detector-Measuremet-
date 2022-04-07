@@ -1,0 +1,197 @@
+/* mbed Microcontroller Library
+ * Copyright (c) 2019 ARM Limited
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "mbed.h"
+
+// Connect to a terminal to print to 
+Serial pc(USBTX, USBRX);
+
+
+// The UV and visible light photodiode measurements are analog    
+AnalogIn pd(A0);
+AnalogIn uv(A1);
+// The state of the switch is a digital input
+DigitalIn swch(D2); 
+// The select lines for the multiplexers are digital outputs
+DigitalOut S0(D3);    
+DigitalOut S1(D4);
+DigitalOut S2(D5); 
+DigitalIn BUTTON (USER_BUTTON); 
+
+bool buttonDown = false;
+ 
+class measure {
+public:
+    float PD, UV;
+    int Swch;
+};                                
+
+// Fuction to measure a selected arm
+measure select_arm( int s0, int s1, int s2 ) {
+   
+   // Demultiplexor sends gnd to selected arm 
+   wait(2);
+   // detectors on selected arm take a reading 
+   // Multiplexors read from selected arm
+   // read the PD pin and the UV pin for the measurements the arm took
+   // check the status of the switch
+   
+   measure s;
+   s.PD = pd;
+   s.UV = uv;
+   s.Swch = swch;
+   
+    return s;
+}
+
+// User button interrupt
+class Counter {
+public:
+    Counter(PinName pin) : _interrupt(pin) {        // create the InterruptIn on the pin specified to Counter
+        _interrupt.rise(this, &Counter::increment); // attach increment function of this counter instance
+    }
+ 
+    void increment() {
+        _count++;
+    }
+ 
+    int read() {
+        return _count;
+    }
+ 
+private:
+    InterruptIn _interrupt;
+    volatile int _count;
+};
+ 
+Counter counter(USER_BUTTON);
+
+// Fuction of message used many times 
+void message() {
+    pc.printf("Move the arms to their next positions \n\r");
+    pc.printf("When you are ready to take the next measurement, press the button \n\r");
+    wait(10);
+    printf("Count so far: %d\n\r", counter.read());
+   
+}
+
+void measure_arms(){
+    
+    measure arm1;
+    measure arm2;
+    measure arm3;
+    measure arm4;
+    measure arm5;
+    measure arm6;
+    measure arm7;
+    measure arm8;
+    
+    // Button on the microcontroller is faulty
+    // Sometimes counts one push as two or three
+    // Using > rather than = to mitigate this issue 
+ 
+    // arm 1 
+    // Select lines to mux
+    S0 = 0;
+    S1 = 0;
+    S2 = 0;
+    arm1 = select_arm(S0,S1,S2);
+    pc.printf("Arm 1 was successfully programed and measured \n\r");  
+            
+    // arm 2
+    S2 = 1;
+    arm2 = select_arm(S0,S1,S2);
+    pc.printf("Arm 2 was successfully programed and measured \n\r");  
+
+    // arm 3 
+    S2 = 0;
+    S1 = 1;
+    arm3 = select_arm(S0,S1,S2);
+    pc.printf("Arm 3 was successfully programed and measured \n\r");
+   
+    // arm 4
+    S2 = 1;
+    arm4 = select_arm(S0,S1,S2);
+    pc.printf("Arm 4 was successfully programed and measured \n\r");
+ 
+    // arm 5
+    S2 = 0;
+    S1 = 0;
+    S0 = 1;
+    arm5 = select_arm(S0,S1,S2);
+    pc.printf("Arm 5 was successfully programed and measured \n\r");
+
+    // arm 6
+    S2 = 1;
+    arm6 = select_arm(S0,S1,S2);
+    pc.printf("Arm 6 was successfully programed and measured \n\r");
+    
+    // arm 7
+    S2 = 0;
+    S1 = 1;
+    arm7 = select_arm(S0,S1,S2);
+    pc.printf("Arm 7 was successfully programed and measured \n\r");
+   
+    // arm 8
+    S2 = 1;
+    arm8 = select_arm(S0,S1,S2);
+    pc.printf("Arm 8 was successfully programed and measured \n\r");
+    
+    pc.printf("Measurements: \n\r"); 
+    pc.printf("PD, arms 1 - 8 \n\r"); 
+    pc.printf("%f, %f, %f, %f, %f, %f, %f, %f \n\r", arm1.PD, arm2.PD, arm3.PD, arm4.PD, arm5.PD, arm6.PD, arm7.PD, arm8.PD); 
+    pc.printf("%f, %f, %f, %f, %f, %f, %f, %f \n\r", arm1.UV, arm2.UV, arm3.UV, arm4.UV, arm5.UV, arm6.UV, arm7.UV, arm8.UV);
+    pc.printf("%d, %d, %d, %d, %d, %d, %d, %d \n\r", arm1.Swch, arm2.Swch, arm3.Swch, arm4.Swch, arm5.Swch, arm6.Swch, arm7.Swch, arm8.Swch);
+ 
+ }
+ 
+
+int main()
+{ 
+    pc.printf("Start of Program  \n\r");
+    pc.printf("Place the arms around the plant \n\r");
+    message();
+    if (counter.read() >= 1){
+         measure_arms(); } 
+    else {pc.printf("Button was not pressed, please reset and try again \n\r"); } 
+    message();
+    
+    if (counter.read() > 1){ 
+        measure_arms(); }
+    else {pc.printf("Button was not pressed, please reset and try again \n\r"); }  
+    message();     
+    
+    if (counter.read() > 2){ 
+        measure_arms(); }
+    else {pc.printf("Button was not pressed, please reset and try again \n\r"); }  
+    message();   
+    
+    if (counter.read() > 3){ 
+        measure_arms(); }
+    else {pc.printf("Button was not pressed, please reset and try again \n\r"); }  
+    message();   
+    
+    if (counter.read() > 4){ 
+        measure_arms(); }
+    else {pc.printf("Button was not pressed, please reset and try again \n\r"); }  
+    message();   
+    
+    if (counter.read() > 5){ 
+        measure_arms(); }
+    else {pc.printf("Button was not pressed, please reset and try again \n\r"); }  
+    message();   
+    
+    if (counter.read() > 6){ 
+        measure_arms(); }
+    else {pc.printf("Button was not pressed, please reset and try again \n\r"); }  
+    message();   
+    
+    if (counter.read() > 7){ 
+        measure_arms(); }
+    else {pc.printf("Button was not pressed, please reset and try again \n\r"); }  
+    message();   
+    
+ 
+}
